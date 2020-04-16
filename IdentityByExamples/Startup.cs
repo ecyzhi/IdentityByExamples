@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using IdentityByExamples.Factory;
 using IdentityByExamples.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -44,6 +45,8 @@ namespace IdentityByExamples
             services.AddAutoMapper(typeof(Startup));
 
             services.ConfigureApplicationCookie(o => o.LoginPath = "/Account/Login"); //Default route Identity look for
+
+            services.AddScoped<IUserClaimsPrincipalFactory<User>, CustomClaimsFactory>();
 
             services.AddControllersWithViews();
         }

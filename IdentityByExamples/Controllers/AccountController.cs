@@ -15,11 +15,13 @@ namespace IdentityByExamples.Controllers
     {
         private readonly IMapper _mapper;
         private readonly UserManager<User> _userManager;
+        private readonly SignInManager<User> _signInManager; //Automating authentication process using signinmanager provided by Identity
 
-        public AccountController(IMapper mapper, UserManager<User> userManager)
+        public AccountController(IMapper mapper, UserManager<User> userManager, SignInManager<User> signInManager)
         {
             _mapper = mapper;
             _userManager = userManager;
+            _signInManager = signInManager;
         }
 
         [HttpGet]
@@ -62,6 +64,35 @@ namespace IdentityByExamples.Controllers
             return View();
         }
 
+        //[HttpPost]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> Login(UserLoginModel userModel, string returnUrl = null)
+        //{
+        //    if (!ModelState.IsValid)
+        //    {
+        //        return View(userModel);
+        //    }
+
+        //    var user = await _userManager.FindByEmailAsync(userModel.Email);
+        //    if (user != null &&
+        //        await _userManager.CheckPasswordAsync(user, userModel.Password))
+        //    {
+        //        var identity = new ClaimsIdentity(IdentityConstants.ApplicationScheme);
+        //        identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id));
+        //        identity.AddClaim(new Claim(ClaimTypes.Name, user.UserName));
+
+        //        await HttpContext.SignInAsync(IdentityConstants.ApplicationScheme,
+        //            new ClaimsPrincipal(identity));
+
+        //        return RedirectToLocal(returnUrl);
+        //    }
+        //    else
+        //    {
+        //        ModelState.AddModelError("", "Invalid UserName or Password");
+        //        return View();
+        //    }
+        //}
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(UserLoginModel userModel, string returnUrl = null)
@@ -71,17 +102,9 @@ namespace IdentityByExamples.Controllers
                 return View(userModel);
             }
 
-            var user = await _userManager.FindByEmailAsync(userModel.Email);
-            if (user != null &&
-                await _userManager.CheckPasswordAsync(user, userModel.Password))
+            var result = await _signInManager.PasswordSignInAsync(userModel.Email, userModel.Password, userModel.RememberMe, false);
+            if (result.Succeeded)
             {
-                var identity = new ClaimsIdentity(IdentityConstants.ApplicationScheme);
-                identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id));
-                identity.AddClaim(new Claim(ClaimTypes.Name, user.UserName));
-
-                await HttpContext.SignInAsync(IdentityConstants.ApplicationScheme,
-                    new ClaimsPrincipal(identity));
-
                 return RedirectToLocal(returnUrl);
             }
             else
@@ -89,6 +112,15 @@ namespace IdentityByExamples.Controllers
                 ModelState.AddModelError("", "Invalid UserName or Password");
                 return View();
             }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+
+            return RedirectToAction(nameof(HomeController.Index), "Home");
         }
 
         private IActionResult RedirectToLocal(string returnUrl)
